@@ -4,12 +4,14 @@
  * Soporte Multimodal: Texto, Notas de Voz (Audio) e Imágenes / Documentos.
  */
 
+import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
+import QRCode from 'qrcode';
 import makeWASocket, {
   useMultiFileAuthState,
   DisconnectReason,
@@ -25,6 +27,64 @@ dotenv.config();
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000/chat';
 const AUTH_DIR = path.join(__dirname, 'auth_info');
+const HTTP_PORT = Number(process.env.PORT || 3000);
+
+// Estado global para servir el QR por HTTP (/qr)
+let latestQrDataUrl = null;
+let connectionStatus = 'waiting';
+
+// Servidor HTTP ligero para escanear el QR como imagen PNG desde el navegador
+http.createServer((req, res) => {
+  if (req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: connectionStatus }));
+    return;
+  }
+
+  let bodyHtml = '';
+  if (connectionStatus === 'connected') {
+    bodyHtml = `
+      <h2 style="color:#16a34a;">WhatsApp conectado</h2>
+      <p>La sesión está activa y lista para recibir mensajes.</p>
+    `;
+  } else if (connectionStatus === 'qr' && latestQrDataUrl) {
+    bodyHtml = `
+      <h2>Escanea este QR con WhatsApp</h2>
+      <p>WhatsApp &rarr; Dispositivos vinculados &rarr; Vincular un dispositivo</p>
+      <img src="${latestQrDataUrl}" alt="QR WhatsApp" style="border:8px solid #fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.15);max-width:320px;" />
+      <p style="font-size:12px;color:#666;">Esta página se actualiza automáticamente cada 5 segundos.</p>
+    `;
+  } else if (connectionStatus === 'logged_out') {
+    bodyHtml = `
+      <h2 style="color:#dc2626;">Sesión cerrada</h2>
+      <p>La sesión fue cerrada desde el teléfono. Limpia el volumen <code>auth_info</code> y reinicia el servicio.</p>
+    `;
+  } else {
+    bodyHtml = `
+      <h2>Iniciando puente de WhatsApp...</h2>
+      <p>Esperando código QR. Recargando en unos segundos...</p>
+    `;
+  }
+
+  const refreshMeta = connectionStatus === 'connected' ? '' : '<meta http-equiv="refresh" content="5">';
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  ${refreshMeta}
+  <title>WhatsApp QR - Admisiones</title>
+</head>
+<body style="font-family:system-ui,sans-serif;background:#f3f4f6;color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;">
+  <div style="background:#fff;padding:32px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);max-width:420px;">
+    ${bodyHtml}
+  </div>
+</body>
+</html>`);
+}).listen(HTTP_PORT, '0.0.0.0', () => {
+  console.log(` Servidor HTTP para QR escuchando en puerto ${HTTP_PORT} (ruta /qr)`);
+});
 
 // Logger silencioso para Baileys
 const logger = pino({ level: process.env.LOG_LEVEL || 'error' });
@@ -63,8 +123,13 @@ async function connectToWhatsApp() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log('\n[QR RECIBIDO] Escanea el siguiente código QR con WhatsApp en tu celular:');
-      console.log('(WhatsApp > Ajustes / Menú > Dispositivos vinculados > Vincular un dispositivo)\n');
+      connectionStatus = 'qr';
+      try {
+        latestQrDataUrl = await QRCode.toDataURL(qr, { width: 320, margin: 2 });
+      } catch (err) {
+        console.error('[ERROR QR IMAGE]', err.message);
+      }
+      console.log('\n[QR RECIBIDO] Escanea el código QR en la URL del servicio (/qr) o en la terminal:');
       qrcode.generate(qr, { small: true });
       console.log('\nEsperando escaneo...');
     }
@@ -77,13 +142,18 @@ async function connectToWhatsApp() {
       console.log(`\n[CONEXIÓN CERRADA] Código: ${statusCode} | Motivo: ${reason}`);
 
       if (shouldReconnect) {
+        connectionStatus = 'waiting';
         console.log('[RECONECTANDO] Intentando reconectar al servicio de WhatsApp en 3 segundos...');
         setTimeout(() => connectToWhatsApp(), 3000);
       } else {
+        connectionStatus = 'logged_out';
+        latestQrDataUrl = null;
         console.log('[SESIÓN FINALIZADA] La sesión fue cerrada desde el dispositivo móvil.');
         console.log('Para volver a vincular, elimina la carpeta auth_info/ y reinicia el servicio.');
       }
     } else if (connection === 'open') {
+      connectionStatus = 'connected';
+      latestQrDataUrl = null;
       console.log('\n============================================================');
       console.log('[CONEXIÓN EXITOSA] WhatsApp en línea y listo para recibir chats.');
       console.log('============================================================\n');
