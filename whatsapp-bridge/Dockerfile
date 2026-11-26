@@ -10,7 +10,4 @@ RUN npm install --omit=dev
 
 COPY whatsapp-bridge/index.js ./
 
-# Directorio de persistencia de credenciales de sesión
-VOLUME ["/app/auth_info"]
-
 CMD ["node", "index.js"]
