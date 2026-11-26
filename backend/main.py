@@ -209,7 +209,7 @@ async def query_groq_api(messages: list) -> str:
         "max_tokens": LLM_MAX_TOKENS
     }
 
-    async with httpx.AsyncClient(timeout=12.0) as client:
+    async with httpx.AsyncClient(timeout=35.0) as client:
         response = await client.post(url, headers=headers, json=payload)
         if response.status_code != 200:
             raise RuntimeError(f"Error Groq HTTP {response.status_code}: {response.text[:200]}")
@@ -239,7 +239,7 @@ async def query_gemini_api(model: str, api_key: str, contents: list, system_prom
         }
     }
 
-    async with httpx.AsyncClient(timeout=20.0) as client:
+    async with httpx.AsyncClient(timeout=35.0) as client:
         response = await client.post(url, json=payload)
         if response.status_code != 200:
             raise RuntimeError(f"Error Gemini HTTP {response.status_code}: {response.text[:200]}")

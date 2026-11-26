@@ -260,7 +260,7 @@ async function connectToWhatsApp() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(bodyPayload),
-            signal: AbortSignal.timeout(20000)
+            signal: AbortSignal.timeout(60000)
           });
 
           if (!response.ok) {
@@ -278,7 +278,7 @@ async function connectToWhatsApp() {
           console.error(`[ERROR BACKEND] ${BACKEND_URL}: ${fetchError.message}`);
           replyText =
             'Hola, en este momento nuestro sistema de admisiones se encuentra actualizando información. ' +
-            'Por favor comunícate directamente con Secretaría Académica al +57 312 345 6789 o al (608) 770-1234. ¡Gracias!';
+            'Por favor comunícate directamente con Secretaría Académica al +57 312 345 6789 (https://wa.me/573123456789) o al correo colegio.ciudad1971@gmail.com. ¡Gracias!';
         }
 
         // Detener presencia y responder
