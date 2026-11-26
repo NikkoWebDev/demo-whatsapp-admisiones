@@ -369,8 +369,8 @@ async def execute_smart_chat(phone: str, user_text: str, media: Optional[MediaPa
     # Mensaje de contingencia
     return (
         "Hola, en este momento nuestro canal de admisiones presenta alta congestión en los servidores. "
-        "Por favor comunícate directamente con Secretaría Académica al +57 312 345 6789 o al correo "
-        "admisiones@colegiociudaddelsol.edu.co. ¡Con gusto te atenderemos!"
+        "Por favor comunícate directamente con Secretaría Académica al +57 312 345 6789 (https://wa.me/573123456789) o al correo "
+        "colegio.ciudad1971@gmail.com. ¡Con gusto te atenderemos!"
     ), "offline-fallback"
 
 

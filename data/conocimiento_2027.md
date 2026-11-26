@@ -36,7 +36,7 @@ El Colegio Técnico Ciudad del Sol es una institución educativa privada de car�
 - **Dirección Sede Principal:** Carrera 11 # 18-45, Sogamoso, Boyacá.
 - **Teléfono Secretaría Académica:** +57 (608) 770-1234
 - **Línea WhatsApp de Atención:** +57 312 345 6789
-- **Correo Electrónico:** admisiones@colegiociudaddelsol.edu.co
+- **Correo Electrónico:** colegio.ciudad1971@gmail.com
 - **Horario de Atención Presencial:** Lunes a Viernes de 7:30 a.m. a 12:30 p.m. y de 2:00 p.m. a 5:30 p.m.
 
 ---
