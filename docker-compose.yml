@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_PRIMARY_KEY=${GEMINI_PRIMARY_KEY}
+      - GEMINI_PRIMARY_MODEL=${GEMINI_PRIMARY_MODEL:-gemini-4-hydrogen}
+      - GEMINI_FALLBACK_KEY=${GEMINI_FALLBACK_KEY}
+      - GEMINI_FALLBACK_MODEL=${GEMINI_FALLBACK_MODEL:-gemini-2.5-flash}
+      - MAX_MESSAGES_MONTH=${MAX_MESSAGES_MONTH:-1000}
+    volumes:
+      - ./data:/app/data
+      - ./raw_pdfs:/app/raw_pdfs
+
+  whatsapp-bridge:
+    build:
+      context: .
+      dockerfile: whatsapp-bridge/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=http://backend:8000/chat
+      - LOG_LEVEL=error
+    volumes:
+      - ./whatsapp-bridge/auth_info:/app/auth_info
